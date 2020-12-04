@@ -5,7 +5,7 @@
         <div class="name_select">
           <el-tag>redis集群选择（cluster_name)</el-tag>
           <el-select
-            v-model="value"
+            v-model="value_cluster_name"
             :remote-method="remoteSearchRedisClusterName"
             :loading="loading"
             size="medium"
@@ -16,19 +16,19 @@
             default-first-option
             placeholder="redis集群名关键词选择"
             style="width: 60%"
-            @change="setSelectedServerIdName">
+            @change="setSelectedHosts">
             <el-option
-              v-for="item in cluster_name_options"
-              :key="item.label"
-              :label="item.label"
-              :value="item.value">
+              v-for="item in cluster_options"
+              :key="item.cluster_name"
+              :label="item.cluster_name"
+              :value="item.cluster_name">
             </el-option>
           </el-select>
         </div>
         <div class="host_select">
           <el-tag>redis集群选择（hosts)</el-tag>
           <el-select
-            v-model="value"
+            v-model="value_hosts"
             :remote-method="remoteSearchRedisClusterHosts"
             :loading="loading"
             size="medium"
@@ -39,12 +39,12 @@
             default-first-option
             placeholder="redis集群hosts关键词选择"
             style="width: 70%"
-            @change="setSelectedServerIdHosts">
+            @change="setSelectedClusterName">
             <el-option
-              v-for="item in cluster_hosts_options"
-              :key="item.label"
-              :label="item.label"
-              :value="item.value">
+              v-for="item in cluster_options"
+              :key="item.hosts"
+              :label="item.hosts"
+              :value="item.hosts">
             </el-option>
           </el-select>
         </div>
@@ -132,11 +132,11 @@ export default {
   name: 'Server',
   data() {
     return {
-      cluster_name_options: [],
-      cluster_hosts_options: [],
-      value: this.$store.state.server_id,
-      cluster_name_list: [],
-      cluster_hosts_list: [],
+      cluster_options: [],
+      value_id: this.$store.state.server_id,
+      value_cluster_name: '',
+      value_hosts: '',
+      cluster_list: [],
       loading: false,
       result_code: '',
       result_msg: '',
@@ -159,42 +159,31 @@ export default {
   created() {
     this.fetchData()
   },
-  // mounted() {
-  // },
   methods: {
     fetchData() {
       getServerList(this.params).then(
         // 获取redis集群列表
         res => {
           this.server = res.results
-          console.log('fetchdata')
           // console.log(this.server)
           this.totalNum = res.count
           //
-          this.cluster_hosts_list = this.server.map(item => {
-            return { value: `${item.id}`, label: `${item.hosts}` }
-          })
-          this.cluster_name_list = this.server.map(item => {
-            return { value: `${item.id}`, label: `${item.cluster_name}` }
+          this.cluster_list = this.server.map(item => {
+            return { id: `${item.id}`, hosts: `${item.hosts}`, cluster_name: `${item.cluster_name}` }
           })
           // console.log(this.cluster_name_list)
           if (this.$store.state.redis.server_id !== 0) {
-            this.value = this.$store.state.redis.server_id
-            // this.cluster_name_options = this.cluster_name_list.find(item => {
-            //   if (item.value === this.value.toString()) {
-            //     return item
-            //   }
-            // })
-            // console.log(this.cluster_name_options)
-            // this.cluster_hosts_options = this.cluster_hosts_list.find(item => {
-            //   if (item.value === this.value.toString()) {
-            //     return item
-            //   }
-            // })
-            this.setSelectedServerIdName(this.value)
-            this.setSelectedServerIdName(this.value)
-            // console.log(this.cluster_hosts_options)
-            // console.log(this.cluster_name_options)
+            // this.value = this.$store.state.redis.server_id
+            this.value_cluster_name = this.cluster_list.find(item => {
+              if (parseInt(item.id) === this.$store.state.redis.server_id) {
+                return item
+              }
+            }).cluster_name
+            this.value_hosts = this.cluster_list.find(item => {
+              if (parseInt(item.id) === this.$store.state.redis.server_id) {
+                return item
+              }
+            }).hosts
           }
         },
         err => {
@@ -206,53 +195,64 @@ export default {
       )
     },
     remoteSearchRedisClusterName(query) {
-      this.cluster_name_list = this.server.map(item => {
-        return { value: `${item.id}`, label: `${item.cluster_name}` }
+      this.cluster_list = this.server.map(item => {
+        return { id: `${item.id}`, hosts: `${item.hosts}`, cluster_name: `${item.cluster_name}` }
       })
       if (query !== '') {
         this.loading = true
         setTimeout(() => {
           this.loading = false
-          this.cluster_name_options = this.cluster_name_list.filter(item => {
-            return item.label.toLowerCase()
+          this.cluster_options = this.cluster_list.filter(item => {
+            return item.cluster_name.toLowerCase()
               .indexOf(query.toLowerCase()) > -1
           })
         }, 200)
       } else {
-        this.cluster_name_options = []
+        this.cluster_options = []
       }
     },
     remoteSearchRedisClusterHosts(query) {
-      this.cluster_hosts_list = this.server.map(item => {
-        return { value: `${item.id}`, label: `${item.hosts}` }
+      this.cluster_list = this.server.map(item => {
+        return { id: `${item.id}`, hosts: `${item.hosts}`, cluster_name: `${item.cluster_name}` }
       })
       if (query !== '') {
         this.loading = true
         setTimeout(() => {
           this.loading = false
-          this.cluster_hosts_options = this.cluster_hosts_list.filter(item => {
-            return item.label.toLowerCase()
+          this.cluster_options = this.cluster_list.filter(item => {
+            return item.hosts.toLowerCase()
               .indexOf(query.toLowerCase()) > -1
           })
         }, 200)
       } else {
-        this.cluster_hosts_options = []
+        this.cluster_options = []
       }
     },
-    setSelectedServerIdName(item) {
-      this.selected_server_id = item
-      this.cluster_hosts_options = this.server.map(i => {
-        return { value: `${i.id}`, label: `${i.hosts}` }
-      })
+    setSelectedClusterName() {
+      this.value_cluster_name = this.cluster_options.find(item => {
+        if (item.hosts === this.value_hosts) {
+          console.log(item.cluster_name)
+          return item
+        }
+      }).cluster_name
     },
-    setSelectedServerIdHosts(item) {
-      this.selected_server_id = item
-      this.cluster_name_options = this.server.map(i => {
-        return { value: `${i.id}`, label: `${i.cluster_name}` }
-      })
+    setSelectedHosts() {
+      // this.cluster_options = this.server.map(i => {
+      //   return { value: `${i.id}`, label: `${i.cluster_name}` }
+      // })
+      this.value_hosts = this.cluster_options.find(item => {
+        if (item.cluster_name === this.value_cluster_name) {
+          return item
+        }
+      }).hosts
     },
     handlershowALLKey() {
-      showALLKey(this.value).then(
+      this.value_id = this.cluster_options.find(item => {
+        if (item.cluster_name === this.value_cluster_name) {
+          return item
+        }
+      }).id
+      showALLKey(this.value_id).then(
         // 获取redis集群列表
         res => {
           let str_key = '\n'
@@ -271,7 +271,12 @@ export default {
       )
     },
     handlershowDBSize() {
-      showDBSize(this.value).then(
+      this.value_id = this.cluster_options.find(item => {
+        if (item.cluster_name === this.value_cluster_name) {
+          return item
+        }
+      }).id
+      showDBSize(this.value_id).then(
         // 获取redis集群列表
         res => {
           this.result_code = '返回code：' + res.code
@@ -286,7 +291,12 @@ export default {
       )
     },
     handleGetKey() {
-      this.kwargs.id = this.value
+      this.value_id = this.cluster_options.find(item => {
+        if (item.cluster_name === this.value_cluster_name) {
+          return item
+        }
+      }).id
+      this.kwargs.id = this.value_id
       this.kwargs.key = this.input_key_for_value
       getKey(this.kwargs).then(
         // 获取redis集群列表
@@ -303,7 +313,12 @@ export default {
       )
     },
     handleGetKeyTTL() {
-      this.kwargs.id = this.value
+      this.value_id = this.cluster_options.find(item => {
+        if (item.cluster_name === this.value_cluster_name) {
+          return item
+        }
+      }).id
+      this.kwargs.id = this.value_id
       this.kwargs.key = this.input_key_for_ttl
       getKeyTTL(this.kwargs).then(
         // 获取redis集群列表
@@ -320,13 +335,26 @@ export default {
       )
     },
     handleDelKey() {
-      this.kwargs.id = this.value
+      this.value_id = this.cluster_options.find(item => {
+        if (item.cluster_name === this.value_cluster_name) {
+          return item
+        }
+      }).id
+      this.kwargs.id = this.value_id
       this.kwargs.key = this.input_key_for_del
       delKey(this.kwargs).then(
         // 获取redis集群列表
         res => {
           this.result_code = '返回code：' + res.code
-          this.result_msg = '返回结果：' + res.msg
+          if (parseInt(res.msg) === 1) {
+            this.result_msg = '返回结果：成功删除'
+          }
+          if (parseInt(res.msg) === 0) {
+            this.result_msg = '返回结果：不存在该键'
+          }
+          if (parseInt(res.msg) > 1) {
+            this.result_msg = '返回结果：成功删除' + res.msg + '个键'
+          }
         },
         err => {
           this.$message({
@@ -337,7 +365,12 @@ export default {
       )
     },
     handleCreateKey() {
-      this.kwargs.id = this.value
+      this.value_id = this.cluster_options.find(item => {
+        if (item.cluster_name === this.value_cluster_name) {
+          return item
+        }
+      }).id
+      this.kwargs.id = this.value_id
       this.kwargs.key = this.input_key_for_create
       this.kwargs.value = this.input_value_for_create
       createKey(this.kwargs).then(

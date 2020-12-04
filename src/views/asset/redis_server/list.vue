@@ -48,6 +48,13 @@
           <span>{{ scope.row.hosts }}</span>
         </template>
       </el-table-column>
+      <el-table-column
+        label="集群描述"
+        min-width="100">
+        <template slot-scope="scope">
+          <span>{{ scope.row.description }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="控制" min-width="150">
         <template slot-scope="scope">
           <el-button

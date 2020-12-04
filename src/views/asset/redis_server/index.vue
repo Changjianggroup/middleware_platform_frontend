@@ -8,32 +8,30 @@
       </el-col>
       <el-col :span="3">
         <div class="grid-content bg-purple">
-          <el-select v-model="params.supplier" clearable size="small" placeholder="集群名" @change="handleFilter">
-            <el-option v-for="item in supplierOption" :key="item.id" :label="item.supplier_name" :value="item.id" />
-          </el-select>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="grid-content bg-purple">
-          <el-input v-model="params.keywords" size="small" clearable placeholder="IP、port" class="input-with-select" @keyup.enter.native="handleFilter">
-            <el-button slot="append" icon="el-icon-search" @click="handleFilter"></el-button>
-          </el-input>
+          <!--          <el-input v-model="params.keywords" size="small" clearable placeholder="IP、port" class="input-with-select" @keyup.enter.native="handleFilter">-->
+          <!--            <el-button slot="append" icon="el-icon-search" @click="handleFilter"></el-button>-->
+          <!--          </el-input>-->
         </div>
       </el-col>
       <el-col :span="3"><div class="grid-content bg-purple"></div></el-col>
     </el-row>
-    <server-list ref="serverListTable" :values="server" @mulselect="handleSelectionChange" @delete="handleDeleteServer" @operation="handleOpertionServer"></server-list>
+    <server-list ref="serverListTable" :values="server" @mulselect="handleSelectionChange" @edit="handleDialogUpdate" @delete="handleDeleteServer" @operation="handleOpertionServer"></server-list>
     <el-dialog
       :visible.sync="dialogVisibleCreate"
       title="新增服务器"
       width="40%">
-      <server-form ref="serverCreateForm" :soption="supplierOption" :ioption="idcList" :bname="createString" @submit="handleSubmitCreate" @cancel="handleCreateCancel"></server-form>
+      <server-form ref="serverCreateForm" :bname="createString" @submit="handleSubmitCreate" @cancel="handleCreateCancel"></server-form>
     </el-dialog>
     <el-dialog
       :visible.sync="dialogVisibleUpdate"
       title="修改服务器信息"
-      width="40%">
-      <server-form ref="serverUpdateForm" :form="detailForm" :uarray="uList" :soption="supplierOption" :iarray="idcArray" :ioption="idcList" :bname="updateString" @submit="handleSubmitUpdate" @cancel="handleUpdateCancel"></server-form>
+      width="40%"
+      @closed = "closedUpdateDialog">
+      <server-form ref="serverUpdateForm" :form="serverInfo" :bname="updateString" @submit="handleSubmitUpdate" @cancel="handleUpdateCancel"></server-form>
     </el-dialog>
     <el-row class="bottom-class">
       <el-col :span="1">
@@ -78,15 +76,14 @@ export default {
     return {
       serverid: '',
       server: [],
-      idcList: [],
-      idcArray: [],
-      uList: [],
       multipleSelection: [],
       manufactoryOption: [],
-      supplierOption: [],
+      serverOption: [],
       dialogVisibleCreate: false,
       dialogVisibleUpdate: false,
-      detailForm: {},
+      updateServerInfo: {},
+      serverInfo: {},
+      // detailForm: {},
       createString: '立即创建',
       updateString: '立即更新',
       totalNum: 0,
@@ -94,11 +91,10 @@ export default {
       params: {
         page: 1,
         keywords: '',
-        page_size: 10,
-        supplier: '',
-        manufactory: '',
-        os_type: ''
-      }
+        page_size: 10
+      },
+      cluster_name_list: [],
+      cluster_name_options: []
     }
   },
   created() {
@@ -126,7 +122,7 @@ export default {
         () => {
           this.fetchData()
           this.dialogVisibleCreate = false
-          this.$refs.serverCreateForm.$refs.form.resetFields()
+          this.$refs.serverCreateForm.form.resetFields()
           this.$message({
             type: 'success',
             message: '创建成功'
@@ -146,7 +142,6 @@ export default {
         () => {
           this.fetchData()
           this.dialogVisibleUpdate = false
-          this.$refs.serverUpdateForm.$refs.form.resetFields()
           this.$message({
             type: 'success',
             message: '更新成功'
@@ -159,9 +154,16 @@ export default {
           })
         })
     },
-    handleDialogCreate(value) {
+    handleDialogCreate() {
       // 弹出服务器新增弹框
       this.dialogVisibleCreate = true
+    },
+    handleDialogUpdate(server_obj) {
+      this.serverInfo = server_obj
+      this.dialogVisibleUpdate = true
+    },
+    closedUpdateDialog() {
+      // this.reset = false
     },
     handleDeleteServer(id) {
       // 删除Server

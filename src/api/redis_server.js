@@ -29,7 +29,7 @@ export function deleteServer(id) {
 // 更新服务器
 export function updateServer(params) {
   return request({
-    url: '/redis_server/' + params.id + '/',
+    url: '/redis/management/' + params.id + '/',
     method: 'patch',
     data: params
   })
